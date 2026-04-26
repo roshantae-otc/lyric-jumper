@@ -24,6 +24,7 @@ h1 {
     font-size: 5rem; margin: 0; 
     letter-spacing: 8px; 
     background: linear-gradient(to right, #00f2fe, #ff00ff);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.5));
