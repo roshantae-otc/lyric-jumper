@@ -11,12 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- AUDIO SYSTEM ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playNote(freq, type = 'sine', duration = 0.1) {
+    function playNote(freq, type = 'sine', duration = 0.1, volume = 0.1) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -45,12 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let lives = 3;
     let score = 0;
     let combo = 0;
+    let level = 1;
+    let xp = 0;
     let spawnTimer = 0;
     let activeWords = [];
+    let powerUps = [];
     let currentLane = 1; 
+    let magnetActive = 0; // Timer
+    let multiplierActive = 0; // Timer
     const lanes = [0, 0, 0];
 
-    // --- INITIALIZE UI LISTENERS ---
+    // --- UI LISTENERS ---
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
@@ -69,19 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    document.getElementById('btn-keyboard').onclick = () => {
-        controlMode = 'keyboard';
-        document.getElementById('btn-keyboard').classList.add('active');
-        document.getElementById('btn-mouse').classList.remove('active');
-    };
-
-    document.getElementById('btn-mouse').onclick = () => {
-        controlMode = 'mouse';
-        document.getElementById('btn-mouse').classList.add('active');
-        document.getElementById('btn-keyboard').classList.remove('active');
-    };
-
-    // --- PLAYER (MORE REALISTIC DRAWING) ---
+    // --- PLAYER ---
     const player = {
         x: 0, y: 0, targetX: 0, 
         update() {
@@ -97,69 +90,33 @@ document.addEventListener('DOMContentLoaded', () => {
         draw() {
             ctx.save();
             ctx.translate(this.x, this.y);
-            
             const theme = THEMES[activeTheme];
+            
+            // Magnet Glow Effect
+            if (magnetActive > 0) {
+                ctx.beginPath();
+                ctx.arc(0, -30, 60, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 242, 254, 0.1)';
+                ctx.fill();
+                ctx.strokeStyle = theme.color;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+            }
+
             ctx.shadowBlur = 20; ctx.shadowColor = theme.color;
+            ctx.fillStyle = '#222'; ctx.fillRect(-12, 10, 10, 35); ctx.fillRect(2, 10, 10, 35); // Legs
+            ctx.fillStyle = theme.color; ctx.fillRect(-14, 40, 14, 8); ctx.fillRect(0, 40, 14, 8); // Shoes
+            ctx.fillStyle = multiplierActive > 0 ? '#f1c40f' : '#333';
+            ctx.beginPath(); ctx.roundRect(-18, -40, 36, 55, 12); ctx.fill(); // Torso
             
-            // Realistic Proportions / Details
-            // Legs (Pants)
-            ctx.fillStyle = '#222';
-            ctx.fillRect(-12, 10, 10, 35);
-            ctx.fillRect(2, 10, 10, 35);
-            
-            // Shoes
-            ctx.fillStyle = theme.color;
-            ctx.fillRect(-14, 40, 14, 8);
-            ctx.fillRect(0, 40, 14, 8);
-
-            // Torso (Jacket/Hoodie)
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.roundRect(-18, -40, 36, 55, 12);
-            ctx.fill();
-            
-            // Hoodie Detail
-            ctx.strokeStyle = theme.color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
             // Arms
             const armAngle = Math.sin(Date.now() * 0.01) * 0.2;
-            ctx.fillStyle = '#333';
-            // Left Arm
-            ctx.save();
-            ctx.translate(-18, -35); ctx.rotate(armAngle);
-            ctx.fillRect(-8, 0, 8, 30);
-            ctx.restore();
-            // Right Arm
-            ctx.save();
-            ctx.translate(18, -35); ctx.rotate(-armAngle);
-            ctx.fillRect(0, 0, 8, 30);
-            ctx.restore();
+            ctx.save(); ctx.translate(-18, -35); ctx.rotate(armAngle); ctx.fillRect(-8, 0, 8, 30); ctx.restore();
+            ctx.save(); ctx.translate(18, -35); ctx.rotate(-armAngle); ctx.fillRect(0, 0, 8, 30); ctx.restore();
 
-            // Head (Skin Tone)
-            ctx.fillStyle = '#ffdbac';
-            ctx.beginPath();
-            ctx.arc(0, -60, 18, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Hair (Stylized)
-            ctx.fillStyle = '#1a1a1a';
-            ctx.beginPath();
-            ctx.arc(0, -65, 20, Math.PI, 0);
-            ctx.fill();
-
-            // Face Details
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(-6, -62, 2, 0, Math.PI * 2);
-            ctx.arc(6, -62, 2, 0, Math.PI * 2);
-            ctx.fill();
-            // Mouth
-            ctx.beginPath();
-            ctx.arc(0, -55, 4, 0.2, Math.PI - 0.2);
-            ctx.stroke();
-
+            ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(0, -60, 18, 0, Math.PI * 2); ctx.fill(); // Head
+            ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(0, -65, 20, Math.PI, 0); ctx.fill(); // Hair
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(-6, -62, 2, 0, Math.PI * 2); ctx.arc(6, -62, 2, 0, Math.PI * 2); ctx.fill(); // Eyes
             ctx.restore();
         }
     };
@@ -170,39 +127,48 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lane = Math.floor(Math.random() * 3);
             this.x = lanes[this.lane];
             this.y = -100;
-            this.speed = 4 + (score * 0.004);
-            this.scale = 1;
+            this.speed = 4 + (level * 0.5);
         }
-        update() { this.y += this.speed; this.scale = 1 + Math.sin(Date.now() * 0.01) * 0.05; }
+        update() {
+            if (magnetActive > 0 && Math.abs(this.y - player.y) < 300) {
+                this.x += (player.x - this.x) * 0.1;
+            }
+            this.y += this.speed;
+        }
         draw() {
             ctx.save();
             ctx.translate(this.x, this.y);
-            ctx.scale(this.scale, this.scale);
             ctx.fillStyle = '#FFF';
             ctx.font = 'bold 24px Orbitron';
             ctx.textAlign = 'center';
             ctx.shadowBlur = 15; ctx.shadowColor = THEMES[activeTheme].color;
             ctx.fillText(this.text, 0, 0);
-            
-            // Visual Trail
-            ctx.globalAlpha = 0.2;
-            ctx.fillText(this.text, 0, -10);
-            ctx.fillText(this.text, 0, -20);
             ctx.restore();
         }
     }
 
-    function triggerFlash() {
-        flashEl.style.opacity = 0.2;
-        setTimeout(() => flashEl.style.opacity = 0, 80);
+    class PowerUp {
+        constructor() {
+            this.type = Math.random() > 0.5 ? 'magnet' : 'multiplier';
+            this.lane = Math.floor(Math.random() * 3);
+            this.x = lanes[this.lane];
+            this.y = -100;
+            this.speed = 3;
+        }
+        update() { this.y += this.speed; }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.font = '30px Arial';
+            ctx.shadowBlur = 20; ctx.shadowColor = this.type === 'magnet' ? '#00f2fe' : '#f1c40f';
+            ctx.fillText(this.type === 'magnet' ? '🧲' : '⭐', 0, 0);
+            ctx.restore();
+        }
     }
 
     function resize() { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight;
-        lanes[0] = canvas.width / 4;
-        lanes[1] = canvas.width / 2;
-        lanes[2] = (canvas.width / 4) * 3;
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        lanes[0] = canvas.width / 4; lanes[1] = canvas.width / 2; lanes[2] = (canvas.width / 4) * 3;
     }
     window.addEventListener('resize', resize); resize();
 
@@ -210,18 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let mouseX = 0;
     window.addEventListener('keydown', e => {
         if (!gameActive) return;
-        if (controlMode === 'keyboard') {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
-                if (currentLane > 0) currentLane--;
-                playNote(TRACKS[activeTrack].baseFreq * 0.8, 'square', 0.05);
-            }
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') {
-                if (currentLane < 2) currentLane++;
-                playNote(TRACKS[activeTrack].baseFreq * 1.2, 'square', 0.05);
-            }
-        }
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') if (currentLane > 0) currentLane--;
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') if (currentLane < 2) currentLane++;
     });
-
     canvas.addEventListener('mousemove', e => { mouseX = e.clientX; });
 
     startBtn.onclick = () => {
@@ -229,66 +186,58 @@ document.addEventListener('DOMContentLoaded', () => {
         vibeSelector.style.display = 'none';
         uiOverlay.style.display = 'block';
         gameActive = true;
-        lives = 3; score = 0; combo = 0;
-        activeWords = [];
-        player.x = lanes[1];
+        lives = 3; score = 0; combo = 0; level = 1; xp = 0;
+        activeWords = []; powerUps = [];
         requestAnimationFrame(gameLoop);
     };
 
     function gameLoop() {
         if (!gameActive) return;
         const theme = THEMES[activeTheme];
-        
-        ctx.fillStyle = theme.bg;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Lanes
-        ctx.strokeStyle = theme.laneColor;
-        ctx.lineWidth = 2;
-        lanes.forEach(x => {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-        });
+        // UI Logic
+        if (magnetActive > 0) magnetActive--;
+        if (multiplierActive > 0) multiplierActive--;
 
         player.update();
         player.draw();
 
         spawnTimer++;
-        if (spawnTimer > TRACKS[activeTrack].tempo) {
+        if (spawnTimer > Math.max(20, TRACKS[activeTrack].tempo - (level * 2))) {
             const pool = TRACKS[activeTrack].lyrics.split(' / ');
             activeWords.push(new WordBubble(pool[Math.floor(Math.random() * pool.length)]));
+            if (Math.random() < 0.03) powerUps.push(new PowerUp());
             spawnTimer = 0;
         }
 
-        for (let i = activeWords.length - 1; i >= 0; i--) {
-            const w = activeWords[i];
-            w.update();
-            w.draw();
-
-            // Collision Check
-            const distY = Math.abs(player.y - w.y);
-            if (currentLane === w.lane && distY < 60) {
-                score += 10 + (combo * 2);
-                combo++;
+        activeWords.forEach((w, i) => {
+            w.update(); w.draw();
+            const hit = (currentLane === w.lane || (magnetActive > 0 && Math.abs(player.x - w.x) < 100)) && Math.abs(player.y - w.y) < 60;
+            if (hit) {
+                let gain = (10 + combo) * (multiplierActive > 0 ? 2 : 1);
+                score += gain; xp += 10; combo++;
                 lyricEl.innerText = w.text;
-                triggerFlash();
-                // Play Musical Note based on combo
-                playNote(TRACKS[activeTrack].baseFreq + (combo * 20), 'sine', 0.2);
+                playNote(TRACKS[activeTrack].baseFreq + (combo * 10), 'sine', 0.2);
                 activeWords.splice(i, 1);
-            } 
-            else if (w.y > canvas.height) {
-                combo = 0;
-                lives--;
-                playNote(100, 'sawtooth', 0.3); // Sad miss sound
-                activeWords.splice(i, 1);
-                if (lives <= 0) {
-                    gameActive = false;
-                    vibeSelector.style.display = 'block';
-                    uiOverlay.style.display = 'none';
-                }
+                if (xp >= level * 100) { level++; xp = 0; playNote(880, 'square', 0.5); }
+            } else if (w.y > canvas.height) {
+                combo = 0; lives--; activeWords.splice(i, 1);
+                if (lives <= 0) { gameActive = false; vibeSelector.style.display = 'block'; uiOverlay.style.display = 'none'; }
             }
-        }
+        });
 
-        altitudeEl.innerText = `SCORE: ${score}`;
+        powerUps.forEach((p, i) => {
+            p.update(); p.draw();
+            if (currentLane === p.lane && Math.abs(player.y - p.y) < 60) {
+                if (p.type === 'magnet') magnetActive = 300;
+                else multiplierActive = 300;
+                playNote(800, 'triangle', 0.4);
+                powerUps.splice(i, 1);
+            } else if (p.y > canvas.height) powerUps.splice(i, 1);
+        });
+
+        altitudeEl.innerHTML = `LEVEL ${level} <br> SCORE: ${score}`;
         livesEl.innerText = '❤️'.repeat(lives) + (combo > 5 ? ` 🔥 x${combo}` : '');
         requestAnimationFrame(gameLoop);
     }
