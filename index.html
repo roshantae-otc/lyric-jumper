@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyric Jumper Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="bg-far" class="bg-layer"></div>
+    <div id="bg-mid" class="bg-layer"></div>
+    <div id="bg-near" class="bg-layer"></div>
+
+    <div id="vibe-selector">
+        <h1>LYRIC JUMPER</h1>
+        
+        <div class="menu-section">
+            <label>CHOOSE THEME</label>
+            <div class="theme-grid">
+                <div class="theme-btn active" data-theme="cyber">CYBER</div>
+                <div class="theme-btn" data-theme="dream">DREAM</div>
+                <div class="theme-btn" data-theme="nature">NATURE</div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <label>CHOOSE TRACK</label>
+            <div id="track-list" class="track-container">
+                <div class="track active" data-track="pop">✨ POP STAR</div>
+                <div class="track" data-track="synth">⚡ SYNTH WAVE</div>
+                <div class="track" data-track="lofi">☁️ CHILL LOFI</div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <label>INPUT METHOD</label>
+            <div class="toggle-container">
+                <button id="btn-keyboard" class="toggle-option active">ARROWS</button>
+                <button id="btn-mouse" class="toggle-option">MOUSE</button>
+            </div>
+        </div>
+
+        <button id="start-btn">PLAY NOW</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-overlay" style="display: none;">
+        <div id="stats">
+            <div id="altitude">0m</div>
+            <div id="lives-container">❤️❤️❤️</div>
+        </div>
+        <div id="current-lyric">LET'S GO!</div>
+    </div>
+
+    <div id="milestone-popup"></div>
+    <div id="flash" class="flash"></div>
+
+    <script src="game.js"></script>
+</body>
+</html>

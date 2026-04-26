@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700&family=Orbitron:wght@700&display=swap');
+
+body, html {
+    margin: 0; padding: 0; overflow: hidden;
+    background-color: #000; font-family: 'Inter', sans-serif;
+    color: white; user-select: none;
+}
+
+#gameCanvas { display: block; position: relative; z-index: 10; }
+
+.bg-layer {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    z-index: 1; pointer-events: none; transition: opacity 1s ease;
+}
+
+#vibe-selector {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 90%; max-width: 450px; background: rgba(0,0,0,0.9);
+    padding: 2.5rem; border-radius: 40px; text-align: center;
+    z-index: 200; backdrop-filter: blur(20px);
+    border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 100px rgba(0,0,0,1);
+}
+
+h1 { font-family: 'Bebas Neue', cursive; font-size: 4rem; margin: 0; letter-spacing: 4px; color: #4facfe; }
+
+.menu-section { margin: 1.5rem 0; text-align: left; }
+label { font-size: 0.7rem; font-weight: bold; opacity: 0.5; letter-spacing: 2px; display: block; margin-bottom: 0.8rem; }
+
+.theme-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.theme-btn { 
+    padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; 
+    font-size: 0.8rem; cursor: pointer; text-align: center; transition: all 0.3s;
+    border: 1px solid transparent;
+}
+.theme-btn.active { background: #4facfe; color: black; font-weight: bold; }
+
+.track-container { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 5px; }
+.track { 
+    padding: 15px; border-radius: 10px; cursor: pointer; transition: 0.3s;
+    font-size: 0.9rem; margin: 5px 0;
+}
+.track.active { background: rgba(79, 172, 254, 0.2); border-left: 4px solid #4facfe; }
+
+.toggle-container { display: flex; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 15px; }
+.toggle-option { 
+    flex: 1; padding: 12px; background: transparent; border: none; 
+    color: white; font-family: inherit; cursor: pointer; border-radius: 10px;
+}
+.toggle-option.active { background: #4facfe; color: black; font-weight: bold; }
+
+#start-btn {
+    width: 100%; padding: 1.5rem; background: #4facfe; border: none;
+    border-radius: 20px; font-family: 'Orbitron', sans-serif;
+    color: black; font-weight: bold; font-size: 1.2rem; cursor: pointer;
+    margin-top: 1rem; transition: 0.3s;
+}
+#start-btn:hover { transform: scale(1.02); filter: brightness(1.2); }
+
+#ui-overlay { position: absolute; top: 40px; left: 40px; z-index: 100; pointer-events: none; }
+#stats { display: flex; align-items: center; gap: 20px; }
+#altitude { font-family: 'Orbitron', sans-serif; font-size: 2.5rem; }
+#lives-container { font-size: 1.5rem; }
+#current-lyric { margin-top: 10px; font-size: 1.2rem; opacity: 0.8; font-style: italic; color: #4facfe; }
+
+#milestone-popup {
+    position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+    font-family: 'Bebas Neue', cursive; font-size: 6rem; opacity: 0; z-index: 100;
+}
+#milestone-popup.show { opacity: 1; transform: translate(-50%, -60%); transition: 1s ease-out; }
+
+.flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; pointer-events: none; z-index: 1000; opacity: 0; }
