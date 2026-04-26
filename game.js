@@ -74,11 +74,26 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
+    document.getElementById('btn-keyboard').onclick = () => {
+        controlMode = 'keyboard';
+        document.getElementById('btn-keyboard').classList.add('active');
+        document.getElementById('btn-mouse').classList.remove('active');
+        playNote(660, 'triangle', 0.05);
+    };
+
+    document.getElementById('btn-mouse').onclick = () => {
+        controlMode = 'mouse';
+        document.getElementById('btn-mouse').classList.add('active');
+        document.getElementById('btn-keyboard').classList.remove('active');
+        playNote(880, 'triangle', 0.05);
+    };
+
     // --- PLAYER ---
     const player = {
         x: 0, y: 0, targetX: 0, 
         update() {
             if (controlMode === 'mouse' && gameActive) {
+                // Determine lane based on mouse X position relative to canvas width
                 if (mouseX < canvas.width / 3) currentLane = 0;
                 else if (mouseX > (canvas.width / 3) * 2) currentLane = 2;
                 else currentLane = 1;
